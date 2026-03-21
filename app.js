@@ -30,16 +30,16 @@ const c3=document.getElementById('canvas3d').getContext('2d');
 const cm=document.getElementById('minimapCanvas').getContext('2d');
 
 // ── Thème ────────────────────────────────────────────────────
-function applyTheme(t){
+function applyTheme(t,skipDraw){
   S.theme=t;
   document.body.classList.toggle('light',t==='light');
   document.getElementById('themeBtn').textContent=t==='light'?'🌙':'☀';
   localStorage.setItem('lycee_theme',t);
-  redraw();
+  if(!skipDraw)redraw();
 }
 document.getElementById('themeBtn').addEventListener('click',()=>applyTheme(S.theme==='dark'?'light':'dark'));
 const savedTheme=localStorage.getItem('lycee_theme')||'dark';
-applyTheme(savedTheme);
+applyTheme(savedTheme,true);
 
 function resize(){
   const z=document.querySelector('.canvas-zone');
@@ -60,7 +60,10 @@ function adjCol(hex,n){
 function isDark(){return S.theme==='dark';}
 
 // ── Dessin 2D ────────────────────────────────────────────────
-function redraw(){draw2d();if(S.view==='3d')draw3d();drawMinimap();}
+function redraw(){
+  if(!c2||!c3||!cm)return;
+  draw2d();if(S.view==='3d')draw3d();drawMinimap();
+}
 
 function draw2d(){
   const c=c2,W=c.canvas.width,H=c.canvas.height;
