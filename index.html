@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Plan Interactif — Lycée Gustave Eiffel Ermont</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header__left">
+    <div class="logo" id="logoBtn" title="Admin">
+      <div class="logo__shape">GE</div>
+    </div>
+    <div class="header__info">
+      <h1 class="header__title">Lycée Gustave Eiffel</h1>
+      <span class="header__sub">Ermont — Plan Interactif</span>
+    </div>
+  </div>
+  <div class="header__controls">
+    <!-- Étage -->
+    <div class="tab-group">
+      <button class="tab active" data-floor="rdc">RDC</button>
+      <button class="tab" data-floor="etage1">Étage 1</button>
+      <button class="tab" data-floor="both">Les deux</button>
+    </div>
+    <!-- Vue -->
+    <div class="tab-group">
+      <button class="tab view-tab active" data-view="2d">2D</button>
+      <button class="tab view-tab" data-view="3d">3D</button>
+    </div>
+    <!-- Zoom -->
+    <div class="zoom-controls">
+      <button class="zoom-btn" id="zoomIn">+</button>
+      <button class="zoom-btn" id="zoomOut">−</button>
+      <button class="zoom-btn" id="zoomReset">⊙</button>
+    </div>
+  </div>
+</header>
+
+<!-- PANNEAU GAUCHE -->
+<aside class="sidebar">
+  <!-- Recherche -->
+  <div class="sidebar__block">
+    <h3 class="sidebar__title">🔍 Recherche</h3>
+    <input class="sidebar__input" id="searchInput" type="text" placeholder="Numéro de salle…"/>
+    <div class="sidebar__suggestions" id="suggestions"></div>
+  </div>
+  <!-- Itinéraire -->
+  <div class="sidebar__block">
+    <h3 class="sidebar__title">🧭 Itinéraire</h3>
+    <div class="route-field">
+      <label>Départ</label>
+      <select id="routeFrom">
+        <option value="">— Choisir —</option>
+      </select>
+    </div>
+    <div class="route-field">
+      <label>Arrivée</label>
+      <select id="routeTo">
+        <option value="">— Choisir —</option>
+      </select>
+    </div>
+    <button class="btn-route" id="calcRoute">Calculer le chemin</button>
+    <button class="btn-clear" id="clearRoute">Effacer</button>
+    <div class="route-info" id="routeInfo"></div>
+  </div>
+  <!-- Légende -->
+  <div class="sidebar__block">
+    <h3 class="sidebar__title">📋 Légende</h3>
+    <div class="legend">
+      <div class="legend__item"><span style="background:#B8D4E8"></span>Salle de cours</div>
+      <div class="legend__item"><span style="background:#C8E6C9"></span>Salle spéciale</div>
+      <div class="legend__item"><span style="background:#A5D6A7"></span>Entrée</div>
+      <div class="legend__item"><span style="background:#BCAAA4"></span>Escalier</div>
+      <div class="legend__item"><span style="background:#d4d4d4"></span>Couloir</div>
+      <div class="legend__item"><span style="background:#3B82F6"></span>Itinéraire</div>
+    </div>
+  </div>
+</aside>
+
+<!-- CANVAS ZONE -->
+<main class="canvas-zone">
+  <!-- 2D Canvas -->
+  <div id="view2d" class="view-container active">
+    <canvas id="canvas2d"></canvas>
+  </div>
+  <!-- 3D Canvas -->
+  <div id="view3d" class="view-container">
+    <canvas id="canvas3d"></canvas>
+    <div class="view3d-controls">
+      <button class="v3btn" id="v3ext">🏫 Vue extérieure</button>
+      <button class="v3btn active" id="v3int">🏠 Vue intérieure</button>
+    </div>
+  </div>
+</main>
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- MODAL LOGIN ADMIN -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal">
+    <h2>🔐 Accès Administrateur</h2>
+    <input class="modal-input" id="adminLogin" type="text" placeholder="Identifiant"/>
+    <input class="modal-input" id="adminPass"  type="password" placeholder="Mot de passe"/>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn--cancel" id="adminCancel">Annuler</button>
+      <button class="modal-btn modal-btn--ok"     id="adminSubmit">Connexion</button>
+    </div>
+    <p class="modal-error" id="adminError"></p>
+  </div>
+</div>
+
+<!-- MODAL ADMIN PANEL -->
+<div class="modal-overlay" id="adminPanel">
+  <div class="modal modal--wide">
+    <h2>⚙️ Mode Administrateur</h2>
+    <p class="admin-hint">Cliquez sur une salle dans le plan 2D pour la modifier.</p>
+    <div id="adminRoomEditor" class="admin-editor" style="display:none">
+      <h3 id="adminRoomTitle">Salle sélectionnée</h3>
+      <div class="admin-grid">
+        <label>Numéro / Nom</label>
+        <input type="text" id="adminLabel"/>
+        <label>Position X</label>
+        <input type="number" id="adminX"/>
+        <label>Position Y</label>
+        <input type="number" id="adminY"/>
+        <label>Largeur</label>
+        <input type="number" id="adminW"/>
+        <label>Hauteur</label>
+        <input type="number" id="adminH"/>
+        <label>Couleur</label>
+        <input type="color" id="adminColor"/>
+        <label>Étage</label>
+        <select id="adminFloor">
+          <option value="rdc">RDC</option>
+          <option value="etage1">Étage 1</option>
+        </select>
+      </div>
+      <div class="admin-actions">
+        <button class="modal-btn modal-btn--ok" id="adminSave">💾 Sauvegarder</button>
+        <button class="modal-btn" id="adminDelete" style="background:#e74c3c;color:#fff">🗑 Supprimer</button>
+      </div>
+    </div>
+    <div class="admin-actions" style="margin-top:1rem">
+      <button class="modal-btn" id="adminAddRoom">➕ Ajouter salle</button>
+      <button class="modal-btn modal-btn--cancel" id="adminClose">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
