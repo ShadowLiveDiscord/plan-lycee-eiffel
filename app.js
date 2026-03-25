@@ -249,7 +249,11 @@ function drawRoute(c){
 
 // Animation route
 function animateRoute(){
-  if(S.route){routeAnimFrame=(routeAnimFrame+0.5)%18;draw2d();}
+  if(S.route){
+    routeAnimFrame=(routeAnimFrame+0.5)%18;
+    draw2d();
+    if(S.view==='3d')draw3d();
+  }
   requestAnimationFrame(animateRoute);
 }
 animateRoute();
@@ -419,7 +423,48 @@ function draw3d(){
   c.clearRect(0,0,W,H);
   c.fillStyle=isDark()?'#0d1117':'#e0e4ea';c.fillRect(0,0,W,H);
   if(S.v3mode==='exterior')draw3dExt();
-  else draw3dInt();
+  else{draw3dInt();if(S.route)drawRoute3d();}
+}
+
+function drawRoute3d(){
+  if(!S.route)return;
+  const floorZMap={rdc:0,etage1:130};
+  const ox=450,oy=320;
+  for(const seg of S.route){
+    const fid=seg.floor;
+    const floor=BD.floors[fid];
+    const z=floorZMap[fid]||0;
+    const routeZ=z+36;
+    const nm={};floor.navNodes.forEach(n=>nm[n.id]=n);
+    const nodes=seg.nodes.map(id=>nm[id]).filter(Boolean);
+    if(nodes.length<2)continue;
+    const pts=nodes.map(n=>isoP(n.x-ox,n.y-oy,routeZ));
+    // Halo
+    c3.save();
+    c3.strokeStyle='rgba(47,129,247,0.25)';
+    c3.lineWidth=10;c3.lineCap='round';c3.lineJoin='round';
+    c3.beginPath();c3.moveTo(pts[0].sx,pts[0].sy);
+    pts.slice(1).forEach(p=>c3.lineTo(p.sx,p.sy));c3.stroke();
+    // Ligne principale animée
+    c3.strokeStyle='#2f81f7';c3.lineWidth=4;
+    c3.setLineDash([10,6]);c3.lineDashOffset=-routeAnimFrame;
+    c3.beginPath();c3.moveTo(pts[0].sx,pts[0].sy);
+    pts.slice(1).forEach(p=>c3.lineTo(p.sx,p.sy));c3.stroke();
+    c3.setLineDash([]);
+    // Points départ / arrivée
+    pts.forEach((p,i)=>{
+      const isFirst=i===0,isLast=i===pts.length-1;
+      if(!isFirst&&!isLast)return;
+      const col=isFirst?'#3fb950':'#f85149';
+      c3.beginPath();c3.arc(p.sx,p.sy,7,0,Math.PI*2);
+      c3.fillStyle=col;c3.shadowColor=col;c3.shadowBlur=12;c3.fill();
+      c3.font='700 8px Syne,sans-serif';c3.fillStyle='#fff';
+      c3.textAlign='center';c3.textBaseline='middle';
+      c3.shadowBlur=0;
+      c3.fillText(isFirst?'D':'A',p.sx,p.sy);
+    });
+    c3.restore();
+  }
 }
 
 function draw3dInt(){
