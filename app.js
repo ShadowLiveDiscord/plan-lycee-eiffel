@@ -421,46 +421,50 @@ function box3d(x,y,w,h,z,dz,top,front,side){
 function draw3d(){
   const c=c3,W=c.canvas.width,H=c.canvas.height;
   c.clearRect(0,0,W,H);
-  c.fillStyle=isDark()?'#0d1117':'#e0e4ea';c.fillRect(0,0,W,H);
+  // Fond dégradé
+  const grd=c.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,isDark()?'#0d1117':'#dce3ea');
+  grd.addColorStop(1,isDark()?'#161b22':'#c8d0d8');
+  c.fillStyle=grd;c.fillRect(0,0,W,H);
   if(S.v3mode==='exterior')draw3dExt();
   else{draw3dInt();if(S.route)drawRoute3d();}
 }
 
 function drawRoute3d(){
   if(!S.route)return;
-  const floorZMap={rdc:0,etage1:130};
+  const floorZMap={rdc:0,etage1:160};
   const ox=450,oy=320;
   for(const seg of S.route){
     const fid=seg.floor;
     const floor=BD.floors[fid];
-    const z=floorZMap[fid]||0;
-    const routeZ=z+36;
+    const z=(floorZMap[fid]||0)+38;
     const nm={};floor.navNodes.forEach(n=>nm[n.id]=n);
     const nodes=seg.nodes.map(id=>nm[id]).filter(Boolean);
     if(nodes.length<2)continue;
-    const pts=nodes.map(n=>isoP(n.x-ox,n.y-oy,routeZ));
-    // Halo
+    const pts=nodes.map(n=>isoP(n.x-ox,n.y-oy,z));
     c3.save();
-    c3.strokeStyle='rgba(47,129,247,0.25)';
-    c3.lineWidth=10;c3.lineCap='round';c3.lineJoin='round';
+    // Halo
+    c3.strokeStyle='rgba(47,129,247,0.3)';
+    c3.lineWidth=14;c3.lineCap='round';c3.lineJoin='round';
     c3.beginPath();c3.moveTo(pts[0].sx,pts[0].sy);
     pts.slice(1).forEach(p=>c3.lineTo(p.sx,p.sy));c3.stroke();
-    // Ligne principale animée
-    c3.strokeStyle='#2f81f7';c3.lineWidth=4;
-    c3.setLineDash([10,6]);c3.lineDashOffset=-routeAnimFrame;
+    // Ligne animée
+    c3.strokeStyle='#58a6ff';c3.lineWidth=5;
+    c3.setLineDash([12,7]);c3.lineDashOffset=-routeAnimFrame*2;
+    c3.shadowColor='#2f81f7';c3.shadowBlur=8;
     c3.beginPath();c3.moveTo(pts[0].sx,pts[0].sy);
     pts.slice(1).forEach(p=>c3.lineTo(p.sx,p.sy));c3.stroke();
-    c3.setLineDash([]);
-    // Points départ / arrivée
+    c3.setLineDash([]);c3.shadowBlur=0;
+    // Points D / A
     pts.forEach((p,i)=>{
-      const isFirst=i===0,isLast=i===pts.length-1;
-      if(!isFirst&&!isLast)return;
+      if(i!==0&&i!==pts.length-1)return;
+      const isFirst=i===0;
       const col=isFirst?'#3fb950':'#f85149';
-      c3.beginPath();c3.arc(p.sx,p.sy,7,0,Math.PI*2);
-      c3.fillStyle=col;c3.shadowColor=col;c3.shadowBlur=12;c3.fill();
-      c3.font='700 8px Syne,sans-serif';c3.fillStyle='#fff';
-      c3.textAlign='center';c3.textBaseline='middle';
+      c3.beginPath();c3.arc(p.sx,p.sy,9,0,Math.PI*2);
+      c3.fillStyle=col;c3.shadowColor=col;c3.shadowBlur=15;c3.fill();
       c3.shadowBlur=0;
+      c3.font='bold 9px sans-serif';c3.fillStyle='#fff';
+      c3.textAlign='center';c3.textBaseline='middle';
       c3.fillText(isFirst?'D':'A',p.sx,p.sy);
     });
     c3.restore();
@@ -468,77 +472,89 @@ function drawRoute3d(){
 }
 
 function draw3dInt(){
+  const FLOOR_H=160; // hauteur entre étages
+  const ROOM_H=42;   // hauteur des blocs salles
+  const WALL_H=48;   // hauteur des murs
+  const CORR_H=6;    // hauteur des couloirs
+  const ox=450,oy=320;
+
   const floors=S.floor==='both'
-    ?[{fid:'rdc',z:0},{fid:'etage1',z:130}]
+    ?[{fid:'rdc',z:0},{fid:'etage1',z:FLOOR_H}]
     :[{fid:S.floor,z:0}];
 
   for(const{fid,z}of floors){
     const floor=BD.floors[fid];
-    const ox=450,oy=320;
 
     // Plancher
-    box3d(-ox,-oy,floor.w,floor.h,z-3,3,
-      isDark()?'#1e2433':'#d0d7de',
-      isDark()?'#161b22':'#c5cdd6',
-      isDark()?'#161b22':'#c5cdd6');
+    const floorTop=isDark()?'#1a2030':'#c8d4e0';
+    const floorFront=isDark()?'#141820':'#b8c4d0';
+    box3d(-ox,-oy,floor.w,floor.h,z-4,4,floorTop,floorFront,floorFront);
 
-    // Couloirs
+    // Couloirs (surélevés légèrement)
     for(const cor of floor.corridors){
-      box3d(cor.x-ox,cor.y-oy,cor.w,cor.h,z,5,
-        isDark()?'#5a6478':'#b0b8c4',
-        isDark()?'#4a5468':'#a0a8b4',
-        isDark()?'#3e4860':'#909aa8');
+      const ct=isDark()?'#3a4255':'#a8b4c0';
+      const cf=isDark()?'#2e3548':'#98a4b0';
+      box3d(cor.x-ox,cor.y-oy,cor.w,cor.h,z,CORR_H,ct,cf,adjCol(cf,-10));
     }
 
     // Murs intérieurs
     for(const w of(floor.walls||[])){
-      box3d(w.x-ox,w.y-oy,w.w,w.h,z,32,
-        isDark()?'#2d333b':'#6e7681',
-        isDark()?'#22272e':'#57606a',
-        isDark()?'#1c2128':'#444c56');
+      const wt=isDark()?'#2a2f3a':'#7a8290';
+      const wf=isDark()?'#1e2330':'#6a7280';
+      box3d(w.x-ox,w.y-oy,w.w,w.h,z,WALL_H,wt,wf,adjCol(wf,-10));
     }
 
-    // Salles
+    // Salles — dessinées avec vraies couleurs et bonne hauteur
     for(const room of floor.rooms){
       const isHL=S.highlight===room.id;
-      const dz=room.type==='stair'?35:30;
+      const isRoute=S.routeFrom?.id===room.id||S.routeTo?.id===room.id;
       let col=room.color||'#6BB5D6';
-      if(room.type==='stair')col='#8B4513';
-      else if(room.type==='entrance')col='#228B22';
-      if(isHL)col='#ffd700';
-      box3d(room.x-ox,room.y-oy,room.w,room.h,z,dz,
-        adjCol(col,20),adjCol(col,-10),adjCol(col,-30));
+      if(room.type==='stair') col='#8B5E3C';
+      else if(room.type==='entrance') col='#2E8B57';
+      if(isHL||isRoute) col='#FFD700';
+      const dz=room.type==='stair'?ROOM_H+8:ROOM_H;
+      const topCol=adjCol(col,30);
+      const frontCol=adjCol(col,-5);
+      const sideCol=adjCol(col,-20);
+      box3d(room.x-ox,room.y-oy,room.w,room.h,z,dz,topCol,frontCol,sideCol);
 
-      // Label
-      const tp=isoP(room.x-ox+room.w/2,room.y-oy+room.h/2,z+dz);
+      // Label sur le dessus
+      const tp=isoP(room.x-ox+room.w/2,room.y-oy+room.h/2,z+dz+1);
       c3.save();
-      c3.font=`700 9px Syne,sans-serif`;
-      c3.fillStyle='rgba(0,0,0,0.8)';
+      c3.font=`bold ${Math.max(8,Math.min(11,room.w/5))}px Syne,sans-serif`;
+      c3.fillStyle='rgba(0,0,0,0.85)';
       c3.textAlign='center';c3.textBaseline='middle';
       c3.fillText(room.label.split('\n')[0],tp.sx,tp.sy);
       c3.restore();
     }
 
-    // Murs extérieurs 3D
+    // Murs extérieurs épais
     const xs=floor.rooms.map(r=>r.x),ys=floor.rooms.map(r=>r.y);
     const x2s=floor.rooms.map(r=>r.x+r.w),y2s=floor.rooms.map(r=>r.y+r.h);
-    const mx=Math.min(...xs)-15,my=Math.min(...ys)-15;
-    const mw=Math.max(...x2s)-mx+15,mh=Math.max(...y2s)-my+15;
-    // Mur avant
-    const p1=isoP(mx-ox,my+mh-oy,z),p2=isoP(mx+mw-ox,my+mh-oy,z);
-    const p3=isoP(mx+mw-ox,my+mh-oy,z+42),p4=isoP(mx-ox,my+mh-oy,z+42);
-    c3.beginPath();c3.moveTo(p1.sx,p1.sy);c3.lineTo(p2.sx,p2.sy);c3.lineTo(p3.sx,p3.sy);c3.lineTo(p4.sx,p4.sy);c3.closePath();
-    c3.fillStyle=isDark()?'#2d333b':'#8c959f';c3.fill();c3.strokeStyle='rgba(0,0,0,0.3)';c3.lineWidth=0.8;c3.stroke();
+    const mx=Math.min(...xs)-14,my=Math.min(...ys)-14;
+    const mw=Math.max(...x2s)-mx+14,mh=Math.max(...y2s)-my+14;
+    const wallCol=isDark()?'#2d333b':'#8c959f';
+    const wallDark=isDark()?'#1c2128':'#6e7681';
+    // Mur avant bas
+    const pa1=isoP(mx-ox,my+mh-oy,z),pa2=isoP(mx+mw-ox,my+mh-oy,z);
+    const pa3=isoP(mx+mw-ox,my+mh-oy,z+WALL_H),pa4=isoP(mx-ox,my+mh-oy,z+WALL_H);
+    c3.beginPath();c3.moveTo(pa1.sx,pa1.sy);c3.lineTo(pa2.sx,pa2.sy);c3.lineTo(pa3.sx,pa3.sy);c3.lineTo(pa4.sx,pa4.sy);c3.closePath();
+    c3.fillStyle=wallCol;c3.fill();c3.strokeStyle='rgba(0,0,0,0.3)';c3.lineWidth=0.8;c3.stroke();
     // Mur droit
-    const p5=isoP(mx+mw-ox,my-oy,z),p6=isoP(mx+mw-ox,my+mh-oy,z);
-    const p7=p2,p8=isoP(mx+mw-ox,my+mh-oy,z+42),p9=isoP(mx+mw-ox,my-oy,z+42);
-    c3.beginPath();c3.moveTo(p5.sx,p5.sy);c3.lineTo(p6.sx,p6.sy);c3.lineTo(p8.sx,p8.sy);c3.lineTo(p9.sx,p9.sy);c3.closePath();
-    c3.fillStyle=isDark()?'#22272e':'#6e7681';c3.fill();c3.strokeStyle='rgba(0,0,0,0.3)';c3.stroke();
-  }
+    const pb1=isoP(mx+mw-ox,my-oy,z),pb2=isoP(mx+mw-ox,my+mh-oy,z);
+    const pb3=isoP(mx+mw-ox,my+mh-oy,z+WALL_H),pb4=isoP(mx+mw-ox,my-oy,z+WALL_H);
+    c3.beginPath();c3.moveTo(pb1.sx,pb1.sy);c3.lineTo(pb2.sx,pb2.sy);c3.lineTo(pb3.sx,pb3.sy);c3.lineTo(pb4.sx,pb4.sy);c3.closePath();
+    c3.fillStyle=wallDark;c3.fill();c3.strokeStyle='rgba(0,0,0,0.3)';c3.stroke();
 
-  // Étiquette étage
-  c3.save();c3.font='600 13px Syne,sans-serif';c3.fillStyle=isDark()?'rgba(88,166,255,0.6)':'rgba(9,105,218,0.6)';c3.textAlign='center';
-  c3.fillText(S.floor==='both'?'Vue complète':BD.floors[S.floor].label,c3.canvas.width/2,c3.canvas.height-20);c3.restore();
+    // Label étage flottant
+    const labelP=isoP(-ox+floor.w/2,-oy-30,z+WALL_H+10);
+    c3.save();
+    c3.font='700 13px Syne,sans-serif';
+    c3.fillStyle=isDark()?'rgba(88,166,255,0.8)':'rgba(9,105,218,0.8)';
+    c3.textAlign='center';c3.textBaseline='middle';
+    c3.fillText(floor.label,labelP.sx,labelP.sy);
+    c3.restore();
+  }
 }
 
 function draw3dExt(){
