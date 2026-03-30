@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Plan Interactif — Lycée Gustave Eiffel Ermont</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash__logo">GE</div>
+  <div class="splash__title">Lycée Gustave Eiffel</div>
+  <div class="splash__sub">Ermont — Plan Interactif</div>
+  <div class="splash__bar"><div class="splash__fill"></div></div>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header__left">
+    <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="logo" id="logoBtn"><div class="logo__t">GE</div></div>
+    <div>
+      <div class="header__name">Lycée Gustave Eiffel</div>
+      <div class="header__sub">Ermont — Plan Interactif</div>
+    </div>
+  </div>
+  <div class="header__controls">
+    <div class="tab-group" id="floorTabs">
+      <button class="tab active" data-floor="rdc">RDC</button>
+      <button class="tab" data-floor="etage1">Étage 1</button>
+      <button class="tab" data-floor="both">Les deux</button>
+    </div>
+    <div class="tab-group" id="viewTabs">
+      <button class="tab view-tab active" data-view="2d">2D</button>
+      <button class="tab view-tab" data-view="3d">3D</button>
+    </div>
+    <div class="icon-btns">
+      <button class="icon-btn" id="zoomIn"  title="Zoom +">+</button>
+      <button class="icon-btn" id="zoomOut" title="Zoom −">−</button>
+      <button class="icon-btn" id="zoomReset" title="Recentrer">⊙</button>
+      <button class="icon-btn" id="themeBtn" title="Mode clair/sombre">☀</button>
+    </div>
+  </div>
+</header>
+
+<!-- DRAWER OVERLAY (mobile) -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <!-- Recherche -->
+    <div class="sb">
+      <div class="sb__title">🔍 Recherche</div>
+      <input class="sb__input" id="searchInput" type="text" placeholder="Numéro ou nom de salle…"/>
+      <div class="suggestions" id="suggestions"></div>
+    </div>
+
+    <!-- Filtre -->
+    <div class="sb">
+      <div class="sb__title">🏷 Filtrer par type</div>
+      <div class="filter-btns">
+        <button class="filter-btn active" data-filter="all">Tous</button>
+        <button class="filter-btn" data-filter="classroom">Cours</button>
+        <button class="filter-btn" data-filter="special">Spéciale</button>
+        <button class="filter-btn" data-filter="stair">Escaliers</button>
+        <button class="filter-btn" data-filter="entrance">Entrée</button>
+      </div>
+    </div>
+
+    <!-- Détail salle -->
+    <div class="sb" id="roomDetailBlock" style="display:none">
+      <div class="sb__title">📍 Salle sélectionnée</div>
+      <div class="room-detail show" id="roomDetail"></div>
+    </div>
+
+    <!-- Itinéraire -->
+    <div class="sb">
+      <div class="sb__title">🧭 Itinéraire</div>
+      <div class="route-field">
+        <label>Départ</label>
+        <select id="routeFrom"><option value="">— Choisir —</option></select>
+      </div>
+      <div class="route-field">
+        <label>Arrivée</label>
+        <select id="routeTo"><option value="">— Choisir —</option></select>
+      </div>
+      <button class="btn-primary" id="calcRoute">Calculer le chemin</button>
+      <button class="btn-secondary" id="clearRoute">Effacer l'itinéraire</button>
+      <div class="route-info" id="routeInfo"></div>
+    </div>
+
+    <!-- Légende -->
+    <div class="sb">
+      <div class="sb__title">📋 Légende</div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#6BB5D6"></div>Salle de cours</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#7AB55A"></div>Salle spéciale</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#3DB56A"></div>Entrée</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#A0522D"></div>Escalier</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#c8cdd3"></div>Couloir</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#2f81f7"></div>Itinéraire</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- CANVAS ZONE -->
+  <main class="canvas-zone">
+
+    <div class="view active" id="view2d">
+      <canvas id="canvas2d"></canvas>
+    </div>
+
+    <div class="view" id="view3d">
+      <canvas id="canvas3d"></canvas>
+      <div class="v3-controls">
+        <button class="v3-btn" id="v3ext">🏫 Extérieure</button>
+        <button class="v3-btn active" id="v3int">🏠 Intérieure</button>
+      </div>
+    </div>
+
+    <!-- Minimap -->
+    <div id="minimap">
+      <canvas id="minimapCanvas"></canvas>
+      <div class="minimap-label" id="minimapLabel">RDC</div>
+    </div>
+
+  </main>
+</div>
+
+<!-- BOTTOM BAR MOBILE -->
+<nav class="mobile-bottom" id="mobileBottom">
+  <button class="mbb active" data-mbb="map" id="mbbMap">
+    <span class="mbb-icon">🗺️</span>Plan
+  </button>
+  <button class="mbb" data-mbb="search" id="mbbSearch">
+    <span class="mbb-icon">🔍</span>Chercher
+  </button>
+  <button class="mbb" data-mbb="route" id="mbbRoute">
+    <span class="mbb-icon">🧭</span>Itinéraire
+  </button>
+  <button class="mbb" data-mbb="floor" id="mbbFloor">
+    <span class="mbb-icon">🏢</span>Étage
+  </button>
+  <button class="mbb" data-mbb="view" id="mbbView">
+    <span class="mbb-icon">👁</span>Vue
+  </button>
+</nav>
+
+<!-- TOOLTIP -->
+<div id="tooltip"></div>
+
+<!-- MODAL ADMIN LOGIN -->
+<div class="overlay" id="modalLogin">
+  <div class="modal">
+    <h2>🔐 Accès Administrateur</h2>
+    <input class="modal-input" id="adminUser" type="text" placeholder="Identifiant"/>
+    <input class="modal-input" id="adminPass" type="password" placeholder="Mot de passe"/>
+    <div class="modal-row">
+      <button class="mbtn" id="loginCancel">Annuler</button>
+      <button class="mbtn mbtn--ok" id="loginOk">Connexion</button>
+    </div>
+    <div class="modal-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- MODAL ADMIN PANEL -->
+<div class="overlay" id="modalAdmin">
+  <div class="modal modal--wide">
+    <h2>⚙️ Mode Administrateur</h2>
+    <p style="font-size:0.8rem;color:var(--text2);margin-bottom:1rem">Cliquez sur une salle pour la modifier.</p>
+    <div id="adminEditor" style="display:none">
+      <h3 id="adminTitle" style="font-size:0.9rem;color:var(--accent2);margin-bottom:0.6rem"></h3>
+      <div class="admin-grid">
+        <label>Nom / Numéro</label><input type="text" id="aLabel"/>
+        <label>X</label><input type="number" id="aX"/>
+        <label>Y</label><input type="number" id="aY"/>
+        <label>Largeur</label><input type="number" id="aW"/>
+        <label>Hauteur</label><input type="number" id="aH"/>
+        <label>Couleur</label><input type="color" id="aColor"/>
+        <label>Étage</label>
+        <select id="aFloor">
+          <option value="rdc">RDC</option>
+          <option value="etage1">Étage 1</option>
+        </select>
+      </div>
+      <div class="modal-row">
+        <button class="mbtn mbtn--del" id="aDel">🗑 Supprimer</button>
+        <button class="mbtn mbtn--ok" id="aSave">💾 Sauvegarder</button>
+      </div>
+    </div>
+    <div class="modal-row" style="margin-top:0.8rem">
+      <button class="mbtn" id="aAdd">➕ Ajouter salle</button>
+      <button class="mbtn" id="adminClose">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
