@@ -418,17 +418,25 @@ canvas:active{cursor:grabbing;}
   /* Hamburger visible */
   .hamburger{display:flex;}
 
-  /* Sidebar : drawer hors écran par défaut */
+  /* Sidebar : drawer hors écran par défaut — width:0 pour ne pas impacter le layout flex */
   .sidebar{
     position:fixed;top:var(--header-h);left:0;
+    width:var(--sidebar-w);
     height:calc(100vh - var(--header-h));
     transform:translateX(-100%);
     box-shadow:4px 0 24px rgba(0,0,0,0.4);
+    flex-shrink:0;
+  }
+  /* Retirer la sidebar du flux flex sur mobile */
+  .layout .sidebar{
+    position:fixed;
   }
   .sidebar.open{transform:translateX(0);}
 
-  /* Canvas zone prend tout */
-  .canvas-zone{width:100%;}
+  /* Canvas zone prend tout — la sidebar est en fixed, elle ne prend plus de place dans le flex */
+  .canvas-zone{width:100%;flex:1;}
+  /* Hauteur du layout réduite pour laisser place à la bottom bar */
+  .layout{overflow:hidden;height:calc(100vh - var(--header-h) - 56px);}
 
   /* Minimap plus petite, repositionnée */
   #minimap{

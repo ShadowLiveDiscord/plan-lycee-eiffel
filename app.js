@@ -41,9 +41,19 @@ document.getElementById('themeBtn').addEventListener('click',()=>applyTheme(S.th
 const savedTheme=localStorage.getItem('lycee_theme')||'dark';
 applyTheme(savedTheme,true);
 
-function resize(){
+function getCanvasSize(){
+  if(isMobile()){
+    const headerH=document.querySelector('.header').offsetHeight||54;
+    const bottomH=document.getElementById('mobileBottom').offsetHeight||56;
+    return{W:window.innerWidth,H:window.innerHeight-headerH-bottomH};
+  }
   const z=document.querySelector('.canvas-zone');
-  [c2,c3].forEach(c=>{c.canvas.width=z.clientWidth;c.canvas.height=z.clientHeight;});
+  return{W:z.clientWidth,H:z.clientHeight};
+}
+
+function resize(){
+  const{W,H}=getCanvasSize();
+  [c2,c3].forEach(c=>{c.canvas.width=Math.max(W,100);c.canvas.height=Math.max(H,100);});
   cm.canvas.width=150;cm.canvas.height=100;
   redraw();
 }
@@ -343,23 +353,23 @@ function roomAt(sx,sy){
 }
 
 function centerOn(room,fid){
-  const zone=document.querySelector('.canvas-zone');
+  const W=c2.canvas.width,H=c2.canvas.height;
   const floors=S.floor==='both'?['rdc','etage1']:[S.floor];
   let oy=0;
   for(const f of floors){if(f===fid)break;oy+=BD.floors[f].h+60;}
-  S.panX=zone.clientWidth/2-(room.x+room.w/2)*S.zoom;
-  S.panY=zone.clientHeight/2-(room.y+room.h/2+oy)*S.zoom;
+  S.panX=W/2-(room.x+room.w/2)*S.zoom;
+  S.panY=H/2-(room.y+room.h/2+oy)*S.zoom;
   draw2d();drawMinimap();
 }
 
 function zoomTo(room,fid,targetZoom){
-  const zone=document.querySelector('.canvas-zone');
+  const W=c2.canvas.width,H=c2.canvas.height;
   S.zoom=targetZoom;
   const floors=S.floor==='both'?['rdc','etage1']:[S.floor];
   let oy=0;
   for(const f of floors){if(f===fid)break;oy+=BD.floors[f].h+60;}
-  S.panX=zone.clientWidth/2-(room.x+room.w/2)*S.zoom;
-  S.panY=zone.clientHeight/2-(room.y+room.h/2+oy)*S.zoom;
+  S.panX=W/2-(room.x+room.w/2)*S.zoom;
+  S.panY=H/2-(room.y+room.h/2+oy)*S.zoom;
   draw2d();drawMinimap();
 }
 
@@ -637,11 +647,10 @@ function drawMinimap(){
   }
 
   // Viewport actuel
-  const zone=document.querySelector('.canvas-zone');
   const vx=(-S.panX/S.zoom)*sc+ox;
   const vy=(-S.panY/S.zoom)*sc+oy;
-  const vw=(zone.clientWidth/S.zoom)*sc;
-  const vh=(zone.clientHeight/S.zoom)*sc;
+  const vw=(c2.canvas.width/S.zoom)*sc;
+  const vh=(c2.canvas.height/S.zoom)*sc;
   c.strokeStyle='#2f81f7';c.lineWidth=1.5;c.strokeRect(vx,vy,vw,vh);
 
   document.getElementById('minimapLabel').textContent=BD.floors[fid].label;
@@ -1026,11 +1035,13 @@ cv2.addEventListener('touchend',e=>{
 
 // ── Init ─────────────────────────────────────────────────────
 function centerView(){
-  const zone=document.querySelector('.canvas-zone');
+  // Forcer un resize propre d'abord
+  const{W,H}=getCanvasSize();
+  [c2,c3].forEach(c=>{c.canvas.width=Math.max(W,100);c.canvas.height=Math.max(H,100);});
   const floor=BD.floors[S.floor==='both'?'rdc':S.floor];
-  S.zoom=Math.min((zone.clientWidth*0.82)/floor.w,(zone.clientHeight*0.82)/floor.h);
-  S.panX=(zone.clientWidth-floor.w*S.zoom)/2;
-  S.panY=(zone.clientHeight-floor.h*S.zoom)/2;
+  S.zoom=Math.min((W*0.82)/floor.w,(H*0.82)/floor.h);
+  S.panX=(W-floor.w*S.zoom)/2;
+  S.panY=(H-floor.h*S.zoom)/2;
   draw2d();drawMinimap();
 }
 
